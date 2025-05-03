@@ -5,7 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
 
-    $db = (new Database())->getConnection();
+$db = Database::getInstance()->getConnection();
     $stmt = $db->prepare('SELECT * FROM users WHERE username = :username');
     $stmt->bindValue(':username', $username, SQLITE3_TEXT);
     $result = $stmt->execute();
@@ -42,6 +42,7 @@ require_once 'includes/header.php';
             <button type="submit" class="btn btn-primary w-100">Entrar</button>
         </form>
         <div class="mt-3 text-center">
+            <a href="register.php">Não tem uma conta? Cadastre-se</a><br>
             <a href="forgot_password.php">Esqueceu a senha?</a>
         </div>
     </div>

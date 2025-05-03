@@ -1,13 +1,14 @@
 <?php
 class Database {
+    private static $instance = null;
     private $db;
-// includes/database.php (nova linha)
-private function __construct() {
-    // Usa a variável de ambiente do Heroku ou o arquivo local
-    $databasePath = $_ENV['DATABASE_URL'] ?? 'database.db';
-    $this->db = new SQLite3($databasePath);
-    $this->createTables();
-}
+
+    private function __construct() {
+        // Usa a variável de ambiente do Heroku ou o arquivo local
+        $databasePath = $_ENV['DATABASE_URL'] ?? 'database.db';
+        $this->db = new SQLite3($databasePath);
+        $this->createTables();
+    }
 
     private function createTables() {
         // Tabela de usuários
@@ -15,6 +16,7 @@ private function __construct() {
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 reset_token TEXT,
                 reset_expires DATETIME,
@@ -48,6 +50,13 @@ private function __construct() {
                 FOREIGN KEY(task_id) REFERENCES tasks(id)
             )
         ');
+    }
+
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new Database();
+        }
+        return self::$instance;
     }
 
     public function getConnection() {
