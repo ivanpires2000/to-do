@@ -36,14 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
 // Excluir Tarefa
 if (isset($_GET['delete'])) {
     $task_id = intval($_GET['delete']);
-    $db->exec("DELETE FROM tasks WHERE id = $task_id AND user_id = $user_id");
+    $db->exec("DELETE FROM tasks WHERE id = $task_id");
 }
 
 // Alternar status da tarefa
 if (isset($_GET['toggle_status'])) {
     $task_id = intval($_GET['toggle_status']);
     // Buscar status atual
-    $result = $db->query("SELECT status FROM tasks WHERE id = $task_id AND user_id = $user_id");
+    $result = $db->query("SELECT status FROM tasks WHERE id = $task_id");
     $row = $result->fetchArray(SQLITE3_ASSOC);
     if ($row) {
         // Ciclo de status: 0 (pendente) -> 1 (em execução) -> 2 (concluída) -> 0
@@ -53,19 +53,18 @@ if (isset($_GET['toggle_status'])) {
         $current_time = date('Y-m-d H:i:s');
         if ($new_status == 1 && $row['status'] == 0) {
             // Início da tarefa
-            $stmt = $db->prepare("UPDATE tasks SET status = :status, start_time = :start_time WHERE id = :id AND user_id = :user_id");
+            $stmt = $db->prepare("UPDATE tasks SET status = :status, start_time = :start_time WHERE id = :id");
             $stmt->bindValue(':start_time', $current_time, SQLITE3_TEXT);
         } elseif ($new_status == 2) {
             // Tarefa concluída
-            $stmt = $db->prepare("UPDATE tasks SET status = :status, end_time = :end_time WHERE id = :id AND user_id = :user_id");
+            $stmt = $db->prepare("UPDATE tasks SET status = :status, end_time = :end_time WHERE id = :id");
             $stmt->bindValue(':end_time', $current_time, SQLITE3_TEXT);
         } else {
-            $stmt = $db->prepare("UPDATE tasks SET status = :status WHERE id = :id AND user_id = :user_id");
+            $stmt = $db->prepare("UPDATE tasks SET status = :status WHERE id = :id");
         }
 
         $stmt->bindValue(':status', $new_status, SQLITE3_INTEGER);
         $stmt->bindValue(':id', $task_id, SQLITE3_INTEGER);
-        $stmt->bindValue(':user_id', $user_id, SQLITE3_INTEGER);
         $stmt->execute();
     }
     header("Location: dashboard.php");
@@ -76,10 +75,9 @@ if (isset($_GET['toggle_status'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['completion_notes']) && isset($_POST['task_id'])) {
     $task_id = intval($_POST['task_id']);
     $completion_notes = trim($_POST['completion_notes']);
-    $stmt = $db->prepare("UPDATE tasks SET completion_notes = :notes WHERE id = :id AND user_id = :user_id");
+    $stmt = $db->prepare("UPDATE tasks SET completion_notes = :notes WHERE id = :id");
     $stmt->bindValue(':notes', $completion_notes, SQLITE3_TEXT);
     $stmt->bindValue(':id', $task_id, SQLITE3_INTEGER);
-    $stmt->bindValue(':user_id', $user_id, SQLITE3_INTEGER);
     $stmt->execute();
     header("Location: dashboard.php");
     exit();
@@ -88,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['completion_notes']) &
 // Buscar Tarefas pendentes e em execução (status 0 e 1)
 $result = $db->query("
     SELECT * FROM tasks 
-    WHERE user_id = $user_id AND status IN (0, 1)
+    WHERE status IN (0, 1)
     ORDER BY priority DESC, due_date ASC
 ");
 $tasks = [];
@@ -99,7 +97,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 // Buscar Tarefas concluídas (status 2) para contabilizar no dashboard
 $result_completed = $db->query("
     SELECT COUNT(*) as total_completed FROM tasks 
-    WHERE user_id = $user_id AND status = 2
+    WHERE status = 2
 ");
 $row_completed = $result_completed->fetchArray(SQLITE3_ASSOC);
 $totalCompletedTasks = $row_completed ? intval($row_completed['total_completed']) : 0;
@@ -108,7 +106,7 @@ $totalCompletedTasks = $row_completed ? intval($row_completed['total_completed']
 // Corrigir cálculo de tarefas pendentes para refletir corretamente no gráfico
 $result_pending = $db->query("
     SELECT COUNT(*) as total_pending FROM tasks 
-    WHERE user_id = $user_id AND status IN (0, 1)
+    WHERE status IN (0, 1)
 ");
 $row_pending = $result_pending->fetchArray(SQLITE3_ASSOC);
 $totalPendingTasks = $row_pending ? intval($row_pending['total_pending']) : 0;
